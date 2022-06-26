@@ -1,34 +1,35 @@
-provider "aws" {
-  region = "us-east-1"
-  access_key = "AKIA6JIVSRCHVCKZYOGR"
-  secret_key = "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"
+name: Deploy Infrastructure
 
-}
+on:
+  push:
+    branches:
+      - master
 
-variable "prefix" {
-  description = "servername prefix"
-  default     = "gritfyapp"
-}
+jobs:
+  tf_fmt:
+    name: Deploy Site
+    runs-on: ubuntu-latest
+    steps:
 
-resource "aws_instance" "web" {
-  ami           = "ami-052efd3df9dad4825"
-  instance_type = "t2.micro"
-  count         = 10
-  vpc_security_group_ids = [
-    "sg-043fa81204ac9ced3"
-  ]
-  user_data = <<EOF
-#!/bin/bash
-sudo echo "ubuntu:data2go!" | chpasswd
-sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sudo /etc/init.d/ssh restart
+    - name: Checkout Repo
+      uses: actions/checkout@v1
 
+    - name: Terraform Init
+      uses: hashicorp/terraform-github-actions/init@v0.4.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TF_ACTION_WORKING_DIR: 'terraform'
+        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-EOF
+    - name: Terraform Validate
+      uses: hashicorp/terraform-github-actions/validate@v0.3.7
 
-}
+    - name: Terraform Apply
+      uses: hashicorp/terraform-github-actions/apply@v0.4.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TF_ACTION_WORKING_DIR: 'terraform'
+        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-output "instances" {
-  value       = aws_instance.web.*.private_ip
-  description = "PrivateIP address details"
-}
