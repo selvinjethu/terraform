@@ -1,2 +1,0 @@
-- name: Verify Terraform version
-  run: terraform --version
